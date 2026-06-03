@@ -1,4 +1,4 @@
-/* 
+/*
 The script was for you (the developer) and your tools; this Rust code is for the application itself.
 Before your application can even run, you need a living, breathing database server.
     Your init_db.sh script talks to Docker to turn on the database.
@@ -19,21 +19,21 @@ use config::Config;
 use serde::Deserialize;
 
 #[derive(Deserialize)]
-pub struct Settings{
+pub struct Settings {
     pub app_port: u16,
-    pub database: DatabaseSettings
+    pub database: DatabaseSettings,
 }
 
 #[derive(Deserialize)]
-pub struct DatabaseSettings{
+pub struct DatabaseSettings {
     pub username: String,
     pub port: u16,
     pub database_name: String,
     pub password: String,
-    pub host: String
+    pub host: String,
 }
-impl DatabaseSettings{
-    pub fn connection_string(&self) -> String{
+impl DatabaseSettings {
+    pub fn connection_string(&self) -> String {
         format!(
             "postgres://{}:{}@{}:{}/{}",
             self.username, self.password, self.host, self.port, self.database_name
@@ -43,9 +43,27 @@ impl DatabaseSettings{
 //
 // "config" job is to read external files (like YAML or TOML) and translate them into a structured format that Rust understands.
 
-pub fn get_configuration() -> Result<Settings, config::ConfigError>{
+pub fn get_configuration() -> Result<Settings, config::ConfigError> {
     let settings = config::Config::builder() //The config crate uses a design pattern called a Builder. Think of this like an assembly line. We are creating a brand new assembly line that is going to construct our configuration object piece-by-piece
-        .add_source(config::File::new("configuration.yaml", config::FileFormat::Yaml))
-        .build()?;  //now execute read, parse 
+        .add_source(config::File::new(
+            "configuration.yaml",
+            config::FileFormat::Yaml,
+        ))
+        .build()?; //now execute read, parse
     settings.try_deserialize::<Settings>()
 }
+
+
+
+/*
+  SQLX GUARENTTES COMPILE TIME SAFETY AND SQLX::QUERY!() IS A COMPILE TIME MACRO WHICH reaches out to your running Docker PostgreSQL database
+  while the compiler is running to check if your SQL statement is valid! It asks the database: "Hey, does a table named subscriptions actually exist?
+  And does it have email and name columns?" AND TO CHECK THOSE THINGS IT NEEDS THE CONNECTION_URL AT COMPILE TIME AS IT DOESNOT KNOW ABOUT YAML'S EXITSTENCE
+  THE CREATORS OF THIS MACRO MADE IT TO LOOK FOR A .ENV FILE TO GET IT . SO SOLUTION => .ENV FILE 
+
+  AND CONFIGURATION.RS HAS THE CCODE WHICCH  only runs after the binary has finished compiling and is actively running in memory (Runtime). FROM CONFIGURAION.YAML
+
+  Think of the .env file as a developer tool pass required to successfully build and test the project on your machine. 
+  Think of configuration.yaml as the actual navigation system your web application uses to survive and operate in the real world once it's turned on
+  
+ */

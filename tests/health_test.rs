@@ -3,6 +3,9 @@
 
 use std::net::TcpListener;
 
+use actixweb_email_newsletter::configuration::get_configuration;
+use sqlx::{Connection, PgConnection};
+
 #[tokio::test]
 async fn health_check_status(){
 
@@ -38,6 +41,9 @@ fn spawn_app() -> String{
 //now will test if user sends name and email correctly 
 #[tokio::test]
 async fn subscriber_returns_valid_formdata(){
+    let configuration = get_configuration().expect("could not read configuration");
+    let connection_url = configuration.database.connection_string();
+    let mut connnection = PgConnection::connect(&connection_url).await.expect("failed to connect to Postgres");
     let address = spawn_app();
     let client = reqwest::Client::new();
     let body = "name=le%20guin&email=ursula_le_guin%40gmail.com";
@@ -49,6 +55,16 @@ async fn subscriber_returns_valid_formdata(){
                     .await.expect("could not sent the post request");
 
     assert_eq!(200, response.status().as_u16());
+
+    let saved = sqlx::query!("select name, email from subscriptions",)
+    .fetch_one(&mut connnection)
+    .await.expect("could not fetch the saved subscription");
+assert_eq!(saved.email, "ursula_le_guin@gmail.com");
+assert_eq!(saved.name, "le guin");
+
+    
+
+    
 }
 
 
