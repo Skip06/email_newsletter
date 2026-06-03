@@ -15,7 +15,6 @@ and opens a permanent line of communication to PostgreSQL so it can save those i
 
 */
 
-use config::Config;
 use serde::Deserialize;
 
 #[derive(Deserialize)]

@@ -25,8 +25,7 @@ fn spawn_app() -> String{
    // we bind it ourselves and then just make actixweb listen to the socket instead of binding. 
    let listener = TcpListener::bind("localhost:0").expect("counld not bind");
    let port = listener.local_addr().unwrap().port(); // local_addr returns a Result of Ok(Struct Socket) which contains ip and port. 
-   
-   //to test we want the os to bind at a port at runtime cause hardcoding the port is not ideal in test (book). but now the get req still gets to 8000 and test fails cause app might be spawned at random port
+  //to test we want the os to bind at a port at runtime cause hardcoding the port is not ideal in test (book). but now the get req still gets to 8000 and test fails cause app might be spawned at random port
    let server = actixweb_email_newsletter::run(listener).expect("the binding failed"); 
 
    //this also runs like in as of a thread in background but when the runtime finishes work it dies so this also dies with the runtime cause this spawn() doesnot know when to stop
