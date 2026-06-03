@@ -1,6 +1,6 @@
 use actixweb_email_newsletter::startup::run;
 use actixweb_email_newsletter::configuration::{self, get_configuration};
-use sqlx::{Connection, PgConnection};
+use sqlx::{PgPool};
 use std::net::TcpListener;
 
 #[tokio::main]
@@ -9,10 +9,10 @@ async fn main() -> Result<(), std::io::Error>{
    //  run("http://localhost:8000")?.await    //?` unwraps the `Result` → gives a `Server`, then `.await` runs the server future — **correct
 
    let configuration = get_configuration().expect("could not read configs");
-   let connection = PgConnection::connect(&configuration.database.connection_string()).await.expect("could not connect to postgres");
+   let connection_pool = PgPool::connect(&configuration.database.connection_string()).await.expect("could not connect to postgres");
    let address_port = configuration.app_port;
    let listener = TcpListener::bind(format!("localhost:{}", address_port))?;
-   run(listener,connection)?.await
+   run(listener,connection_pool)?.await
 }
 
 

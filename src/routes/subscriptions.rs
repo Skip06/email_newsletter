@@ -1,5 +1,7 @@
 use actix_web::{ HttpResponse, web};
-use sqlx::PgConnection;
+use sqlx::PgPool;
+use sqlx::types::Uuid;
+use sqlx::types::chrono::Utc;
 
 #[derive(serde::Deserialize)]
 pub struct FormData {
@@ -9,20 +11,20 @@ pub struct FormData {
 
 pub async fn subscribe(
     form: web::Form<FormData>, // extracts data from incoming form
-    connection: web::Data<PgConnection> //extracts data from application state
+    connection_pool: web::Data<PgPool> //extracts data from application state
 ) //You don’t have to manually write code to parse the user's form data,
 //and you don’t have to manually write code to fetch the database connection.
 //  actix-web looks at the types you wrote (web::Form and web::Data) and automatically "extracts" them for you before running your handler's internal logic.
 -> HttpResponse {
     println!("HANDLER CALLED");
 
-    sqlx::query!(r#"
+    let _ = sqlx::query!(r#"
     INSERT INTO subscriptions (id, email, name, subscribed_at)
     VALUES ($1, $2, $3, $4)
-    "#, Uuid::new_v4(),form.email,form.name, Utc.now())
+    "#, Uuid::new_v4(),form.email,form.name, Utc::now())
     // We use `get_ref` to get an immutable reference to the `PgConnection`
     // wrapped by `web::Data`.
-    .execute(connection.get_ref())
+    .execute(connection_pool.get_ref())
     .await;
 
     HttpResponse::Ok().finish()

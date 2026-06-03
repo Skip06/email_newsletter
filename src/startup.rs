@@ -1,18 +1,18 @@
 use crate::routes::{health_check, subscribe};
 use actix_web::dev::Server;
 use actix_web::{App, HttpServer,  web};
-use sqlx::PgConnection;
+use sqlx::PgPool;
 use std::net::TcpListener;
 
-pub fn run(listener: TcpListener, connection: PgConnection) -> Result<Server, std::io::Error> {
+pub fn run(listener: TcpListener, connection_pool: PgPool) -> Result<Server, std::io::Error> {
     
     // now it returns a Server type which out main fn can await and use it as it was and test can run it as a background task using tokio::spawn()
-    let connection = web::Data::new(connection);
+    let connection_pool = web::Data::new(connection_pool);
     let server = HttpServer::new(move || {   //requires pgConnection to be cloneable READ ARCTIXWEb WORKERS 3.9.2 but it cant be so Arc smart pointer in web::Data()
         App::new()
             .route("/health_check", web::get().to(health_check))
             .route("/subscription", web::post().to(subscribe))
-            .app_data(connection.clone())    //AppState which is shared by whole app
+            .app_data(connection_pool.clone())    //AppState which is shared by whole app
     })
     
     .listen(listener)? 
