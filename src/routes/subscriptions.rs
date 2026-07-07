@@ -16,18 +16,29 @@ pub async fn subscribe(
 //and you don’t have to manually write code to fetch the database connection.
 //  actix-web looks at the types you wrote (web::Form and web::Data) and automatically "extracts" them for you before running your handler's internal logic.
 -> HttpResponse {
-    println!("HANDLER CALLED");
+    // We are using the same interpolation syntax of `println`/`print` here!
+    log::info!("Adding '{}' '{}' as a new subscriber.",form.email,form.name);
+    log::info!("saving the new subscriber details in database.");
 
-    let _ = sqlx::query!(r#"
+    match sqlx::query!(r#"
     INSERT INTO subscriptions (id, email, name, subscribed_at)
     VALUES ($1, $2, $3, $4)
     "#, Uuid::new_v4(),form.email,form.name, Utc::now())
     // We use `get_ref` to get an immutable reference to the `PgConnection`
     // wrapped by `web::Data`.
     .execute(connection_pool.get_ref())
-    .await;
+    .await
+    {
+        Ok(_) => {
+            log::info!("subscriber details saved in db");
+            HttpResponse::Ok().finish()
+        }
+        Err(e) => {
+            log::error!("error when inserting to db -> {:?}", e);
+            HttpResponse::InternalServerError().finish()
+        }
+    }
 
-    HttpResponse::Ok().finish()
 }
 
 
