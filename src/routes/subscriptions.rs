@@ -3,6 +3,8 @@ use sqlx::PgPool;
 use sqlx::types::Uuid;
 use sqlx::types::chrono::Utc;
 
+use tracing::Instrument;
+
 #[derive(serde::Deserialize)]
 pub struct FormData {
     name: String,
@@ -16,9 +18,48 @@ pub async fn subscribe(
 //and you don’t have to manually write code to fetch the database connection.
 //  actix-web looks at the types you wrote (web::Form and web::Data) and automatically "extracts" them for you before running your handler's internal logic.
 -> HttpResponse {
-    // We are using the same interpolation syntax of `println`/`print` here!
-    log::info!("Adding '{}' '{}' as a new subscriber.",form.email,form.name);
-    log::info!("saving the new subscriber details in database.");
+    // Let's generate a random unique identifier
+    let request_id = Uuid::new_v4();
+
+ /*   We are using the info_span! macro to create a new span and attach some values to its context: request_id,
+form.email and form.name.
+We are not using string interpolation anymore: tracing allows us to associate structured information to
+our spans as a collection of key-value pairs2. We can explicitly name them (e.g. subscriber_email for
+form.email) or implicitly use the variable name as key (e.g. the isolated request_id is equivalent to re-
+quest_id = request_id).
+Notice that we prefixed all of them with a % symbol: we are telling tracing to use their Display implement-
+ation for logging purposes. You can find more details on the other available options in their documentation.
+info_span returns the newly created span, but we have to explicitly step into it using the .enter() method
+to activate it.
+.enter() returns an instance of Entered, a guard: as long the guard variable is not dropped all downstream
+spans and log events will be registered as children of the entered sp */
+    // Spans, like logs, have an associated level
+    // `info_span` creates a span at the info-level
+    let request_span = tracing::info_span!(
+        "Adding a new subscriber.",
+        %request_id,
+        subscriber_email = %form.email,
+        subscriber_name = %form.name
+        );
+        // Using `enter` in an async function is a recipe for disaster! cause async works gets mixed within a span
+        // Bear with me for now, but don't do this at home.
+        // See the following section on `Instrumenting Futures`
+    let _request_span_guard = request_span.enter();
+        // [...]
+        // `_request_span_guard` is dropped at the end of `subscribe`
+        // That's when we "exit" the span
+
+
+
+
+    let query_span = tracing::info_span!("saving the new subscriber details in database.",%request_id );
+
+
+
+
+
+
+    
 
     match sqlx::query!(r#"
     INSERT INTO subscriptions (id, email, name, subscribed_at)
@@ -27,19 +68,24 @@ pub async fn subscribe(
     // We use `get_ref` to get an immutable reference to the `PgConnection`
     // wrapped by `web::Data`.
     .execute(connection_pool.get_ref())
+    .instrument(query_span)
     .await
     {
         Ok(_) => {
-            log::info!("subscriber details saved in db");
+            tracing::info!("request_id {} new subscriber details saved in db", request_id);
             HttpResponse::Ok().finish()
         }
         Err(e) => {
-            log::error!("error when inserting to db -> {:?}", e);
+            tracing::error!("request_id {} error when inserting to db -> {:?}", request_id, e);
             HttpResponse::InternalServerError().finish()
         }
     }
 
 }
+
+
+
+
 
 
 /*
