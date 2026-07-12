@@ -23,6 +23,7 @@ path = "src/lib.rs"
 
 [dev-dependencies]
 reqwest = "0.13.4"
+once_cell = "1"
 
 # Using table-like toml syntax to avoid a super-long line!
 [dependencies.sqlx]

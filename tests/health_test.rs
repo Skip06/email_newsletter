@@ -3,7 +3,8 @@ use std::net::TcpListener;
 use actixweb_email_newsletter::configuration::{DatabaseSettings, get_configuration};
 use sqlx::{Connection, Executor, PgConnection, PgPool, Row};
 use uuid::Uuid;
-
+use actixweb_email_newsletter::telemetry::{get_subscriber, init_subscriber};
+use once_cell::sync::Lazy;
 /*
 Given that we are then going to need that very same connection pool in sub-
 scribe_returns_a_200_for_valid_form_data to perform our SELECT query, it makes sense to generalise
@@ -11,13 +12,20 @@ spawn_app: instead of returning a raw String, we will give the caller a struct, 
 both the address of our test application instance and a handle to the connection pool, simplifying the
 arrange steps in our test cases
 */
-
+static TRACING: Lazy<()> = Lazy::new(|| { //static makes it exits for entire lifetime of program
+    let subscriber = get_subscriber("test".into(), "debug".into(),std::io::stdout);
+    init_subscriber(subscriber); //but if i run cargo test subscriber would be init for all tests causing calling the internal global fn more than once so panics => use "once_cell"
+});
 pub struct TestApp {
     pub address: String,
     pub connection_pool: PgPool,
 }
 
 async fn spawn_app() -> TestApp {
+    // The first time `initialize` is invoked the code in `TRACING` is executed.
+    // All other invocations will instead skip execution.
+    Lazy::force(&TRACING);
+    
     let listener = TcpListener::bind("localhost:0").expect("counld not bind");
     let port = listener.local_addr().unwrap().port(); // local_addr returns a Result of Ok(Struct Socket) which contains ip and port.
 
