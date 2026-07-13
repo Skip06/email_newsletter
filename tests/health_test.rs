@@ -13,9 +13,40 @@ both the address of our test application instance and a handle to the connection
 arrange steps in our test cases
 */
 static TRACING: Lazy<()> = Lazy::new(|| { //static makes it exits for entire lifetime of program
-    let subscriber = get_subscriber("test".into(), "debug".into(),std::io::stdout);
-    init_subscriber(subscriber); //but if i run cargo test subscriber would be init for all tests causing calling the internal global fn more than once so panics => use "once_cell"
-});
+    // let subscriber = get_subscriber("test".into(), "debug".into(),std::io::stdout);
+    // init_subscriber(subscriber); //but if i run cargo test subscriber would be init for all tests causing calling the internal global fn more than once so panics => use "once_cell"
+    
+    let default_filter_level = "info".to_string();
+    let subscriber_name = "test".to_string();
+    
+    // We cannot assign the output of `get_subscriber` to a variable based on the   //explanation is on comment on book 
+    // value TEST_LOG` because the sink is part of the type returned by
+    // `get_subscriber`, therefore they are not the same type. We could work around
+    // it, but this is the most straight-forward way of moving forward.
+    
+    if std::env::var("TEST_LOG").is_ok() {
+        let subscriber = get_subscriber(
+        subscriber_name,
+        default_filter_level,
+        std::io::stdout
+        );
+        init_subscriber(subscriber);
+        } else {
+            let subscriber = get_subscriber(
+                subscriber_name,
+                default_filter_level,
+                std::io::sink
+            );
+            init_subscriber(subscriber);
+        };
+    });
+
+
+
+
+
+
+
 pub struct TestApp {
     pub address: String,
     pub connection_pool: PgPool,
