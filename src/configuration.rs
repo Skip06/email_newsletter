@@ -16,6 +16,8 @@ and opens a permanent line of communication to PostgreSQL so it can save those i
 */
 
 use serde::Deserialize;
+use secrecy::Secret;
+use secrecy::ExposeSecret;
 
 #[derive(Deserialize)]
 pub struct Settings {
@@ -28,21 +30,21 @@ pub struct DatabaseSettings {
     pub username: String,
     pub port: u16,
     pub database_name: String,
-    pub password: String,
+    pub password: Secret<String>,
     pub host: String,
 }
 impl DatabaseSettings {
-    pub fn connection_string(&self) -> String {
-        format!(
+    pub fn connection_string(&self) -> Secret<String> {
+        Secret::new(format!(
             "postgres://{}:{}@{}:{}/{}",
-            self.username, self.password, self.host, self.port, self.database_name
-        )
+            self.username, self.password.expose_secret(), self.host, self.port, self.database_name
+        ))
     }
-    pub fn connection_string_without_db(&self) -> String {
-        format!(
+    pub fn connection_string_without_db(&self) -> Secret<String> {
+        Secret::new(format!(
             "postgres://{}:{}@{}:{}",
-            self.username, self.password, self.host, self.port
-        )
+            self.username, self.password.expose_secret(), self.host, self.port
+        ))
     }
 }
 //
@@ -72,3 +74,6 @@ pub fn get_configuration() -> Result<Settings, config::ConfigError> {
   Think of configuration.yaml as the actual navigation system your web application uses to survive and operate in the real world once it's turned on
   
  */
+
+
+ //READ PAGE 126 FOR BETTER UNDERSTANDING OF SECRECY AND THE REASON FOR WRAPPING THE WHOLE CONNECTION STRING AND DISPLAY TRAIT . 

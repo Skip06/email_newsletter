@@ -16,7 +16,7 @@ tracing = { version = "0.1", features = ["log"] }
 tracing-subscriber = { version = "0.3", features = ["registry", "env-filter"] }
 tracing-bunyan-formatter = "0.3" #We are using tracing-bunyan-formatter instead of the formatting layer provided by tracing-subscriber because the latter does not implement metadata inheritance: it would therefore fail to meet our requirements
 tracing-log = "0.1" # this is for log to tracing 
-
+secrecy = { version = "0.8", features = ["serde"] }
 
 [lib]
 path = "src/lib.rs"
