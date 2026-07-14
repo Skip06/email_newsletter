@@ -3,7 +3,6 @@ use sqlx::PgPool;
 use sqlx::types::Uuid;
 use sqlx::types::chrono::Utc;
 
-use tracing::Instrument;
 
 #[derive(serde::Deserialize)]
 pub struct FormData {
