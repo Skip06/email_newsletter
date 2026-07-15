@@ -15,7 +15,6 @@ and opens a permanent line of communication to PostgreSQL so it can save those i
 
 */
 
-use env_logger::Env;
 use serde::Deserialize;
 use secrecy::Secret;
 use secrecy::ExposeSecret;
