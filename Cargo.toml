@@ -18,6 +18,7 @@ tracing-bunyan-formatter = "0.3" #We are using tracing-bunyan-formatter instead 
 tracing-log = "0.1" # this is for log to tracing 
 secrecy = { version = "0.8", features = ["serde"] }
 tracing-actix-web = "0.7" #It is designed as a drop-in replacement of actix-web’s Logger, just based on tracing instead of log
+serde-aux = "4"
 
 [lib]
 path = "src/lib.rs"
